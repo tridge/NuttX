@@ -796,7 +796,7 @@ config ARCH_BOARD
 	default "stm32f3discovery"    if ARCH_BOARD_STM32F3_DISCOVERY
 	default "stm32f4discovery"    if ARCH_BOARD_STM32F4_DISCOVERY
 	default "px4fmu-v1"    	      if ARCH_BOARD_PX4FMU_V1
-	default "px4io-v1"           if ARCH_BOARD_PX4IO_V1
+	default "px4io-v1"            if ARCH_BOARD_PX4IO_V1
 	default "stm32ldiscovery"     if ARCH_BOARD_STM32L_DISCOVERY
 	default "mikroe-stm32f4"      if ARCH_BOARD_MIKROE_STM32F4
 	default "sure-pic32mx"        if ARCH_BOARD_SUREPIC32MX
@@ -1034,6 +1034,9 @@ source "configs/stm32f4discovery/Kconfig"
 endif
 if ARCH_BOARD_PX4FMU_V1
 source "configs/px4fmu-v1/Kconfig"
+endif
+if ARCH_BOARD_PX4IO_V1
+source "configs/px4io-v1/Kconfig"
 endif
 if ARCH_BOARD_STM32L_DISCOVERY
 source "configs/stm32ldiscovery/Kconfig"
