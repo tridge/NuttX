@@ -127,6 +127,12 @@
 #    error "Unknown STM32 DMA"
 #  endif
 
+# if defined(CONFIG_STM32_SPI1_DMADISABLE) || defined(CONFIG_STM32_SPI2_DMADISABLE) || \
+ defined(CONFIG_STM32_SPI3_DMADISABLE) || defined(CONFIG_STM32_SPI4_DMADISABLE) || \
+ defined(CONFIG_STM32_SPI5_DMADISABLE) || defined(CONFIG_STM32_SPI6_DMADISABLE)
+#   define CONFIG_STM32_HAVE_SPI_DMADISABLE
+#endif
+
 #endif
 
 /* DMA channel configuration */
@@ -195,6 +201,9 @@ struct stm32_spidev_s
   DMA_HANDLE       txdma;      /* DMA channel handle for TX transfers */
   sem_t            rxsem;      /* Wait for RX DMA to complete */
   sem_t            txsem;      /* Wait for TX DMA to complete */
+#if defined(CONFIG_STM32_DMACAPABLE) && defined(CONFIG_STM32_HAVE_SPI_DMADISABLE)
+  bool             dma_disabled;/* Disable DMA transfers for this bus */
+#endif
 #endif
 #ifndef CONFIG_SPI_OWNBUS
   sem_t            exclsem;    /* Held while chip is selected for mutual exclusion */
@@ -296,6 +305,13 @@ static struct stm32_spidev_s g_spi1dev =
 #ifdef CONFIG_STM32_SPI_DMA
   .rxch     = DMACHAN_SPI1_RX,
   .txch     = DMACHAN_SPI1_TX,
+#if defined(CONFIG_STM32_DMACAPABLE) && defined(CONFIG_STM32_HAVE_SPI_DMADISABLE)
+# ifdef CONFIG_STM32_SPI1_DMADISABLE
+  .dma_disabled = true,
+#else
+  .dma_disabled = false,
+#endif
+#endif
 #endif
 };
 #endif
@@ -335,6 +351,13 @@ static struct stm32_spidev_s g_spi2dev =
 #ifdef CONFIG_STM32_SPI_DMA
   .rxch     = DMACHAN_SPI2_RX,
   .txch     = DMACHAN_SPI2_TX,
+#if defined(CONFIG_STM32_DMACAPABLE) && defined(CONFIG_STM32_HAVE_SPI_DMADISABLE)
+# ifdef CONFIG_STM32_SPI2_DMADISABLE
+  .dma_disabled = true,
+#else
+  .dma_disabled = false,
+#endif
+#endif
 #endif
 };
 #endif
@@ -374,6 +397,13 @@ static struct stm32_spidev_s g_spi3dev =
 #ifdef CONFIG_STM32_SPI_DMA
   .rxch     = DMACHAN_SPI3_RX,
   .txch     = DMACHAN_SPI3_TX,
+#if defined(CONFIG_STM32_DMACAPABLE) && defined(CONFIG_STM32_HAVE_SPI_DMADISABLE)
+# ifdef CONFIG_STM32_SPI3_DMADISABLE
+  .dma_disabled = true,
+#else
+  .dma_disabled = false,
+#endif
+#endif
 #endif
 };
 #endif
@@ -1343,9 +1373,11 @@ static void spi_exchange_nodma(FAR struct spi_dev_s *dev, FAR const void *txbuff
 static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
                          FAR void *rxbuffer, size_t nwords)
 {
+  FAR struct stm32_spidev_s *priv = (FAR struct stm32_spidev_s *)dev;
+
 #ifdef CONFIG_STM32_DMACAPABLE
   if ((txbuffer && !stm32_dmacapable((uint32_t)txbuffer)) ||
-      (rxbuffer && !stm32_dmacapable((uint32_t)rxbuffer)))
+      (rxbuffer && !stm32_dmacapable((uint32_t)rxbuffer)) || priv->dma_disabled )
     {
       /* Unsupported memory region, fall back to non-DMA method. */
 
@@ -1354,7 +1386,6 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
   else
 #endif
     {
-      FAR struct stm32_spidev_s *priv = (FAR struct stm32_spidev_s *)dev;
       static uint16_t rxdummy = 0xffff;
       static const uint16_t txdummy = 0xffff;
 
