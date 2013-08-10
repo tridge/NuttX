@@ -1515,6 +1515,10 @@ static ssize_t mmcsd_reload(FAR void *dev, FAR uint8_t *buffer,
 
       buffer += priv->blocksize;
     }
+  if (ret == 1) {
+      // on success we need to return the number of blocks read
+      ret = nblocks;
+  }
 #else
   /* Use either the single- or muliple-block transfer method */
 
@@ -1838,6 +1842,10 @@ static ssize_t mmcsd_flush(FAR void *dev, FAR const uint8_t *buffer,
 
       buffer += priv->blocksize;
     }
+  if (ret == 1) {
+      // on success we need to return the number of blocks read
+      ret = nblocks;
+  }
 #else
   if (nblocks == 1)
     {
@@ -1957,6 +1965,10 @@ static ssize_t mmcsd_read(FAR struct inode *inode, unsigned char *buffer,
 
           buffer += priv->blocksize;
         }
+      if (ret == 1) {
+          // on success we need to return the number of blocks read
+          ret = nsectors;
+      }
 #else
       /* Use either the single- or muliple-block transfer method */
 
@@ -2026,6 +2038,10 @@ static ssize_t mmcsd_write(FAR struct inode *inode, FAR const unsigned char *buf
 
       buffer += priv->blocksize;
     }
+  if (ret == 1) {
+      // on success we need to return the number of blocks read
+      ret = nsectors;
+  }
 #else
   /* Use either the single- or multiple-block transfer method */
 
