@@ -169,16 +169,21 @@ FAR void *mm_memalign(FAR struct mm_heap_s *heap, size_t alignment,
       /* Set up the size of the new node */
 
       newnode->size = (size_t)next - (size_t)newnode;
+      newnode->size2 = newnode->size;
+      newnode->magic = MM_MAGIC_ALLOCATED;
       newnode->preceding = precedingsize | MM_ALLOC_BIT;
 
       /* Reduce the size of the original chunk and mark it not allocated, */
 
       node->size = precedingsize;
+      node->size2 = node->size;
+      node->magic = MM_MAGIC_FREE;
       node->preceding &= ~MM_ALLOC_BIT;
 
       /* Fix the preceding size of the next node */
 
       next->preceding = newnode->size | (next->preceding & MM_ALLOC_BIT);
+      next->magic = (next->preceding&MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE;
 
       /* Convert the newnode chunk size back into malloc-compatible size by
        * subtracting the header size SIZEOF_MM_ALLOCNODE.

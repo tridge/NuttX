@@ -263,9 +263,13 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
                */
 
               prev->size        -= takeprev;
+              prev->size2        = prev->size;
               newnode->size      = oldsize + takeprev;
+              newnode->size2     = newnode->size;
+              newnode->magic     = MM_MAGIC_ALLOCATED;
               newnode->preceding = prev->size | MM_ALLOC_BIT;
               next->preceding    = newnode->size | (next->preceding & MM_ALLOC_BIT);
+              next->magic        = (next->preceding&MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE;
 
               /* Return the previous free node to the nodelist (with the new size) */
 
@@ -280,8 +284,11 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
               /* Yes.. update its size (newnode->preceding is already set) */
 
               newnode->size      += oldsize;
+              newnode->size2      = newnode->size;
+              newnode->magic      = MM_MAGIC_ALLOCATED;
               newnode->preceding |= MM_ALLOC_BIT;
               next->preceding     = newnode->size | (next->preceding & MM_ALLOC_BIT);
+              next->magic = (next->preceding&MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE;
             }
 
           oldnode = newnode;
@@ -322,6 +329,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
           /* Extend the node into the next chunk */
 
           oldnode->size = oldsize + takenext;
+          oldnode->size2 = oldnode->size;
           newnode       = (FAR struct mm_freenode_s *)((char*)oldnode + oldnode->size);
 
           /* Did we consume the entire preceding chunk? */
@@ -333,8 +341,10 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
                */
 
               newnode->size        = nextsize - takenext;
+              newnode->size2       = newnode->size;
               newnode->preceding   = oldnode->size;
               andbeyond->preceding = newnode->size | (andbeyond->preceding & MM_ALLOC_BIT);
+              andbeyond->magic     = (andbeyond->preceding&MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE;
 
               /* Add the new free node to the nodelist (with the new size) */
 
@@ -345,6 +355,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
               /* Yes, just update some pointers. */
 
               andbeyond->preceding = oldnode->size | (andbeyond->preceding & MM_ALLOC_BIT);
+              andbeyond->magic     = (andbeyond->preceding&MM_ALLOC_BIT?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE);
             }
         }
 

@@ -136,25 +136,36 @@ struct mm_allocnode_s
 {
   mmsize_t size;           /* Size of this chunk */
   mmsize_t preceding;      /* Size of the preceding chunk */
+  mmsize_t size2;          /* copy of size */
+  mmsize_t magic;          /* magic value */
 };
 
 /* What is the size of the allocnode? */
 
 #ifdef CONFIG_MM_SMALL
-# define SIZEOF_MM_ALLOCNODE   4
-#else
 # define SIZEOF_MM_ALLOCNODE   8
+#else
+# define SIZEOF_MM_ALLOCNODE   16
 #endif
 
 #define CHECK_ALLOCNODE_SIZE \
-  DEBUGASSERT(sizeof(struct mm_allocnode_s) == SIZEOF_MM_ALLOCNODE)
+  DEBUGASSERT(sizeof(struct mm_allocnode_s) == 16)
 
 /* This describes a free chunk */
+
+#ifdef CONFIG_MM_SMALL
+# define MM_MAGIC_ALLOCATED 0x38764327
+#else
+# define MM_MAGIC_ALLOCATED 0x3876
+#endif
+#define MM_MAGIC_FREE      (~MM_MAGIC_ALLOCATED)
 
 struct mm_freenode_s
 {
   mmsize_t size;                   /* Size of this chunk */
   mmsize_t preceding;              /* Size of the preceding chunk */
+  mmsize_t size2;                  /* copy of size */
+  mmsize_t magic;                  /* magic value */
   FAR struct mm_freenode_s *flink; /* Supports a doubly linked list */
   FAR struct mm_freenode_s *blink;
 };
@@ -163,12 +174,12 @@ struct mm_freenode_s
 
 #ifdef CONFIG_MM_SMALL
 #  ifdef CONFIG_SMALL_MEMORY
-#     define SIZEOF_MM_FREENODE 8
-#  else
 #     define SIZEOF_MM_FREENODE 12
+#  else
+#     define SIZEOF_MM_FREENODE 16
 #  endif
 #else
-# define SIZEOF_MM_FREENODE     16
+# define SIZEOF_MM_FREENODE     24
 #endif
 
 #define CHECK_FREENODE_SIZE \

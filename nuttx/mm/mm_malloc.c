@@ -170,17 +170,22 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
 
           remainder = (FAR struct mm_freenode_s*)(((char*)node) + size);
           remainder->size = remaining;
+          remainder->size2 = remaining;
+          remainder->magic = MM_MAGIC_FREE;
           remainder->preceding = size;
 
           /* Adjust the size of the node under consideration */
 
           node->size = size;
+          node->size2 = size;
+          node->magic = MM_MAGIC_ALLOCATED;
 
           /* Adjust the 'preceding' size of the (old) next node, preserving
            * the allocated flag.
            */
 
           next->preceding = remaining | (next->preceding & MM_ALLOC_BIT);
+          next->magic = (next->preceding & MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE;
 
           /* Add the remainder back into the nodelist */
 
@@ -190,6 +195,7 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
       /* Handle the case of an exact size match */
 
       node->preceding |= MM_ALLOC_BIT;
+      node->magic = MM_MAGIC_ALLOCATED;
       ret = (void*)((char*)node + SIZEOF_MM_ALLOCNODE);
     }
 
