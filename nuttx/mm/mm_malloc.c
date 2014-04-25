@@ -146,6 +146,7 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
        */
 
       DEBUGASSERT(node->blink);
+      MM_CHECK_NODE(node);
       node->blink->flink = node->flink;
       if (node->flink)
         {
@@ -165,6 +166,7 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
           /* Get a pointer to the next node in physical memory */
 
           next = (FAR struct mm_freenode_s*)(((char*)node) + node->size);
+          MM_CHECK_NODE(next);
 
           /* Create the remainder node */
 

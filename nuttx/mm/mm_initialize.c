@@ -127,18 +127,21 @@ void mm_addregion(FAR struct mm_heap_s *heap, FAR void *heapstart,
   heap->mm_heapstart[IDX]->size2     = SIZEOF_MM_ALLOCNODE;
   heap->mm_heapstart[IDX]->magic     = MM_MAGIC_ALLOCATED;
   heap->mm_heapstart[IDX]->preceding = MM_ALLOC_BIT;
+  MM_CHECK_NODE(heap->mm_heapstart[IDX]);
 
   node                        = (FAR struct mm_freenode_s *)(heapbase + SIZEOF_MM_ALLOCNODE);
   node->size                  = heapsize - 2*SIZEOF_MM_ALLOCNODE;
   node->size2                 = node->size;
   node->magic                 = MM_MAGIC_FREE;
   node->preceding             = SIZEOF_MM_ALLOCNODE;
+  MM_CHECK_NODE(node);
 
   heap->mm_heapend[IDX]              = (FAR struct mm_allocnode_s *)(heapend - SIZEOF_MM_ALLOCNODE);
   heap->mm_heapend[IDX]->size        = SIZEOF_MM_ALLOCNODE;
   heap->mm_heapend[IDX]->size2       = SIZEOF_MM_ALLOCNODE;
   heap->mm_heapend[IDX]->magic       = MM_MAGIC_ALLOCATED;
   heap->mm_heapend[IDX]->preceding   = node->size | MM_ALLOC_BIT;
+  MM_CHECK_NODE(heap->mm_heapend[IDX]);
 
 #undef IDX
 

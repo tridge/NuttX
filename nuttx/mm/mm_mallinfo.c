@@ -100,6 +100,7 @@ int mm_mallinfo(FAR struct mm_heap_s *heap, FAR struct mallinfo *info)
            node = (struct mm_allocnode_s *)((char*)node + node->size))
         {
           mvdbg("region=%d node=%p size=%p preceding=%p\n", region, node, node->size, node->preceding);
+          MM_CHECK_NODE(node);
           if (node->preceding & MM_ALLOC_BIT)
             {
               uordblks += node->size;

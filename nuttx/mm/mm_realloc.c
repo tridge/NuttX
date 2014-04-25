@@ -133,6 +133,8 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
 
   mm_takesemaphore(heap);
 
+  MM_CHECK_NODE(oldnode);
+
   /* Check if this is a request to reduce the size of the allocation. */
 
   oldsize = oldnode->size;
@@ -159,12 +161,14 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
    */
 
   next = (FAR struct mm_freenode_s *)((FAR char*)oldnode + oldnode->size);
+  MM_CHECK_NODE(next);
   if ((next->preceding & MM_ALLOC_BIT) == 0)
     {
       nextsize = next->size;
     }
 
   prev = (FAR struct mm_freenode_s *)((FAR char*)oldnode - (oldnode->preceding & ~MM_ALLOC_BIT));
+  MM_CHECK_NODE(prev);
   if ((prev->preceding & MM_ALLOC_BIT) == 0)
     {
       prevsize = prev->size;
@@ -314,6 +318,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
            */
 
           andbeyond = (FAR struct mm_allocnode_s*)((char*)next + nextsize);
+          MM_CHECK_NODE(andbeyond);
 
           /* Remove the next node.  There must be a predecessor, but there
            * may not be a successor node.
@@ -343,6 +348,7 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
               newnode->size        = nextsize - takenext;
               newnode->size2       = newnode->size;
               newnode->preceding   = oldnode->size;
+              newnode->magic       = MM_MAGIC_FREE;
               andbeyond->preceding = newnode->size | (andbeyond->preceding & MM_ALLOC_BIT);
               andbeyond->magic     = (andbeyond->preceding&MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE;
 
