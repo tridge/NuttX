@@ -46,6 +46,8 @@
 
 #include <nuttx/mm.h>
 
+#pragma GCC optimize ("O0")
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -249,8 +251,11 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
 
           DEBUGASSERT(prev->blink);
           prev->blink->flink = prev->flink;
+          MM_CHECK_NODE_LINKS(prev);
+          MM_CHECK_NODE_LINKS(prev->blink);
           if (prev->flink)
             {
+          MM_CHECK_NODE_LINKS(prev->flink);
               prev->flink->blink = prev->blink;
             }
 
@@ -326,8 +331,11 @@ FAR void *mm_realloc(FAR struct mm_heap_s *heap, FAR void *oldmem,
 
           DEBUGASSERT(next->blink);
           next->blink->flink = next->flink;
+          MM_CHECK_NODE_LINKS(next);
+          MM_CHECK_NODE_LINKS(next->blink);
           if (next->flink)
             {
+          MM_CHECK_NODE_LINKS(next->flink);
               next->flink->blink = next->blink;
             }
 

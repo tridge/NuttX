@@ -49,6 +49,8 @@
  * Pre-processor Definitions
  ****************************************************************************/
 
+#pragma GCC optimize ("O0")
+
 /****************************************************************************
  * Private Functions
  ****************************************************************************/
@@ -118,8 +120,11 @@ void mm_free(FAR struct mm_heap_s *heap, FAR void *mem)
 
       DEBUGASSERT(next->blink);
       next->blink->flink = next->flink;
+      MM_CHECK_NODE_LINKS(next);
+      MM_CHECK_NODE_LINKS(next->blink);
       if (next->flink)
         {
+          MM_CHECK_NODE_LINKS(next->flink);
           next->flink->blink = next->blink;
         }
 
@@ -145,8 +150,11 @@ void mm_free(FAR struct mm_heap_s *heap, FAR void *mem)
 
       DEBUGASSERT(prev->blink);
       prev->blink->flink = prev->flink;
+      MM_CHECK_NODE_LINKS(prev);
+      MM_CHECK_NODE_LINKS(prev->blink);
       if (prev->flink)
         {
+            MM_CHECK_NODE_LINKS(prev->flink);
           prev->flink->blink = prev->blink;
         }
 

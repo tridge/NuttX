@@ -51,6 +51,8 @@
 #include <nuttx/clock.h>
 #include <nuttx/kmalloc.h>
 
+#pragma GCC optimize ("O0")
+
 #ifdef CONFIG_SCHED_WORKQUEUE
 
 /****************************************************************************
@@ -111,6 +113,11 @@ struct wqueue_s g_work[NWORKERS];
  *
  ****************************************************************************/
 
+
+static struct wqueue_s *g_wqueue;
+static worker_t g_worker;
+static void *g_arg;
+
 static void work_process(FAR struct wqueue_s *wqueue)
 {
   volatile FAR struct work_s *work;
@@ -120,6 +127,9 @@ static void work_process(FAR struct wqueue_s *wqueue)
   uint32_t elapsed;
   uint32_t remaining;
   uint32_t next;
+  struct wqueue_s *wqueue2 = wqueue;
+
+  g_wqueue = wqueue;
 
   /* Then process queued work.  We need to keep interrupts disabled while
    * we process items in the work list.
@@ -158,6 +168,11 @@ static void work_process(FAR struct wqueue_s *wqueue)
            * performed... we don't have any idea how long that will take!
            */
 
+          g_worker = worker;
+          g_arg = arg;
+
+          ASSERT(wqueue == wqueue2);
+
           irqrestore(flags);
           worker(arg);
 
@@ -167,6 +182,9 @@ static void work_process(FAR struct wqueue_s *wqueue)
            */
 
           flags = irqsave();
+
+          ASSERT(wqueue == wqueue2);
+
           work  = (FAR struct work_s *)wqueue->q.head;
         }
       else

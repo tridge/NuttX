@@ -41,6 +41,12 @@
  * Included Files
  ************************************************************/
 
+#include <nuttx/config.h>
+
+#include <stdlib.h>
+#include <assert.h>
+#include <debug.h>
+
 #include <queue.h>
 
 /************************************************************
@@ -55,13 +61,22 @@
  *
  ************************************************************/
 
+#pragma GCC optimize ("O0")
+
 void dq_rem(FAR dq_entry_t *node, dq_queue_t *queue)
 {
+    ASSERT_ALIGNED(node);
+    ASSERT_ALIGNED(queue);
+
   FAR dq_entry_t *prev = node->blink;
   FAR dq_entry_t *next = node->flink;
 
+  ASSERT_ALIGNED(prev);
+  ASSERT_ALIGNED(next);
+
   if (!prev)
     {
+  ASSERT_ALIGNED(queue->head);
       queue->head = next;
     }
   else 
@@ -71,6 +86,7 @@ void dq_rem(FAR dq_entry_t *node, dq_queue_t *queue)
 
   if (!next)
     {
+  ASSERT_ALIGNED(queue->tail);
       queue->tail = prev;
     }
   else 
@@ -78,6 +94,8 @@ void dq_rem(FAR dq_entry_t *node, dq_queue_t *queue)
       next->blink = prev;
     }
 
+  ASSERT_ALIGNED(node->flink);
+  ASSERT_ALIGNED(node->blink);
   node->flink = NULL;
   node->blink = NULL;
 }

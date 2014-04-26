@@ -43,6 +43,8 @@
 
 #include <nuttx/mm.h>
 
+#pragma GCC optimize ("O0")
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -94,8 +96,11 @@ void  mm_shrinkchunk(FAR struct mm_heap_s *heap,
 
       DEBUGASSERT(next->blink);
       next->blink->flink = next->flink;
+      MM_CHECK_NODE_LINKS(next);
+      MM_CHECK_NODE_LINKS(next->blink);
       if (next->flink)
         {
+      MM_CHECK_NODE_LINKS(next->flink);
           next->flink->blink = next->blink;
         }
 

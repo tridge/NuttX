@@ -60,11 +60,13 @@
 #  define ASSERT(f) \
      { if (!(f)) up_assert((const uint8_t *)__FILE__, (int)__LINE__); }
 
-#  define ASSERT2(f, v)                                                   \
-    { if (!(f)) up_assert((const uint8_t *)__FILE__, (int)(__LINE__+((v)*1000)); }
+#  define ASSERT2(f, v)                                                \
+    { if (!(f)) up_assert((const uint8_t *)__FILE__, (int)(__LINE__+((v)*1000))); }
 
 #  define ASSERT3(f, v, v2)                                                \
-    { if (!(f)) up_assert((const uint8_t *)__FILE__, (int)(__LINE__+((v)*1000)+((v2)*10000))); }
+    { if (!(f)) up_assert((const uint8_t *)__FILE__, (int)(v)); }
+
+#define ASSERT_ALIGNED(v) ASSERT((((uint32_t)(v)) & 0x3) == 0)
 
 #  define VERIFY(f) \
      { if ((f) < 0) up_assert((const uint8_t *)__FILE__, (int)__LINE__); }

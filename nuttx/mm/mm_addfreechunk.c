@@ -39,7 +39,13 @@
 
 #include <nuttx/config.h>
 
+#include <stdlib.h>
+#include <assert.h>
+#include <debug.h>
+
 #include <nuttx/mm.h>
+
+#pragma GCC optimize ("O0")
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -75,7 +81,9 @@ void mm_addfreechunk(FAR struct mm_heap_s *heap, FAR struct mm_freenode_s *node)
 
   for (prev = &heap->mm_nodelist[ndx], next = heap->mm_nodelist[ndx].flink;
        next && next->size && next->size < node->size;
-       prev = next, next = next->flink);
+       prev = next, next = next->flink) {
+      MM_CHECK_NODE_LINKS(next);
+  }
 
   /* Does it go in mid next or at the end? */
 
@@ -83,10 +91,13 @@ void mm_addfreechunk(FAR struct mm_heap_s *heap, FAR struct mm_freenode_s *node)
   node->blink = prev;
   node->flink = next;
 
+  MM_CHECK_NODE_LINKS(node);
+
   if (next)
     {
       /* The new node goes between prev and next */
 
       next->blink = node;
+      MM_CHECK_NODE_LINKS(next);
     }
 }

@@ -48,6 +48,7 @@
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
+#pragma GCC optimize ("O0")
 
 /****************************************************************************
  * Public Variables
@@ -201,8 +202,10 @@ void mm_initialize(FAR struct mm_heap_s *heap, FAR void *heapstart,
   /* Initialize the node array */
 
   memset(heap->mm_nodelist, 0, sizeof(struct mm_freenode_s) * MM_NNODES);
+  heap->mm_nodelist[0].magic = MM_MAGIC_FREE;
   for (i = 1; i < MM_NNODES; i++)
     {
+      heap->mm_nodelist[i].magic = MM_MAGIC_FREE;
       heap->mm_nodelist[i-1].flink = &heap->mm_nodelist[i];
       heap->mm_nodelist[i].blink   = &heap->mm_nodelist[i-1];
     }

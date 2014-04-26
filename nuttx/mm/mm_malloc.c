@@ -53,6 +53,8 @@
 #  define NULL ((void*)0)
 #endif
 
+#pragma GCC optimize ("O0")
+
 /****************************************************************************
  * Type Definitions
  ****************************************************************************/
@@ -128,7 +130,9 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
 
   for (node = heap->mm_nodelist[ndx].flink;
        node && node->size < size;
-       node = node->flink);
+       node = node->flink) {
+      MM_CHECK_NODE_LINKS(node);
+  }
 
   /* If we found a node with non-zero size, then this is one to use. Since
    * the list is ordered, we know that is must be best fitting chunk
@@ -146,10 +150,12 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
        */
 
       DEBUGASSERT(node->blink);
-      MM_CHECK_NODE(node);
+      MM_CHECK_NODE_LINKS(node);
       node->blink->flink = node->flink;
+            MM_CHECK_NODE_LINKS(node->blink);
       if (node->flink)
         {
+            MM_CHECK_NODE_LINKS(node->flink);
           node->flink->blink = node->blink;
         }
 

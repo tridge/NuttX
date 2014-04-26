@@ -186,11 +186,19 @@ struct mm_freenode_s
 #define MM_CHECK_NODE1(node) ASSERT3((node)->magic == MM_MAGIC_ALLOCATED || (node)->magic == MM_MAGIC_FREE, 1, ((node)->magic & 0xFFF))
 #define MM_CHECK_NODE2(node) ASSERT3((node)->size == (node)->size2, 2, (node)->size)
 #define MM_CHECK_NODE3(node) ASSERT3((node)->magic == (((node)->preceding&MM_ALLOC_BIT)?MM_MAGIC_ALLOCATED:MM_MAGIC_FREE), 3, 1)
+#define MM_CHECK_NODE4(node) ASSERT3((uint32_t)((node)->flink) < 0x30000000, 4, ((uint32_t)(node)->flink) >> 24)
 
 #define MM_CHECK_NODE(node) \
     {   MM_CHECK_NODE1(node) \
 	MM_CHECK_NODE2(node) \
 	MM_CHECK_NODE3(node) \
+    } 
+
+#define MM_CHECK_NODE_LINKS(node) \
+    {   MM_CHECK_NODE1(node) \
+	MM_CHECK_NODE2(node) \
+	MM_CHECK_NODE3(node) \
+	MM_CHECK_NODE4(node) \
     } 
 
 struct mm_heap_s
