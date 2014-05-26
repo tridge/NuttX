@@ -441,7 +441,20 @@ static int rtc_setup(void)
    * source, and enable the RTC.
    */
 
+/* Some boards do not have the external 32khz oscillator installed, for those boards we must fallback to the crummy
+ * internal RC clock
+ */
+#ifdef CONFIG_RTC_LSICLOCK
+  stm32_rcc_enablelsi();
+
+  /* Use the LSI clock as the input to the RTC block */
+  modifyreg16(STM32_RCC_BDCR, RCC_BDCR_RTCSEL_MASK, RCC_BDCR_RTCSEL_LSI);
+
+  /* Enable the RTC Clock by setting the RTCEN bit in the RCC BDCR register */
+  modifyreg16(STM32_RCC_BDCR, 0, RCC_BDCR_RTCEN);
+#else
   stm32_rcc_enablelse();
+#endif
 
   /* Wait for the RTC Time and Date registers to be synchronized with RTC APB
    * clock.
