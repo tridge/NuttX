@@ -654,7 +654,6 @@ static int ramtron_ioctl(FAR struct mtd_dev_s *dev, int cmd, unsigned long arg)
           priv->speed = (unsigned long)arg;
           ret = OK;
           fvdbg("set bus speed to %lu\n", (unsigned long)priv->speed);
-          ret = OK;
         } else {
           ret = -EINVAL; /* Bad argument */
           fvdbg("inval arg");
