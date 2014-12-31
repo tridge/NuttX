@@ -1,7 +1,7 @@
-/************************************************************
- * libc/string/lib_strncpy.c
+/****************************************************************************
+ * include/sys/custom_file.h
  *
- *   Copyright (C) 2007, 2011 Gregory Nutt. All rights reserved.
+ *   Copyright (C) 2014 Gregory Nutt. All rights reserved.
  *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,28 +31,27 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- ************************************************************/
+ ****************************************************************************/
 
-/************************************************************
+#ifndef __INCLUDE_SYS_CUSTOM_FILE_H
+#define __INCLUDE_SYS_CUSTOM_FILE_H
+
+/****************************************************************************
  * Included Files
- ************************************************************/
+ ****************************************************************************/
+#include <nuttx/fs/fs.h>
 
-#include <nuttx/config.h>
-#include <sys/types.h>
-#include <string.h>
+/****************************************************************************
+ * Pre-Processor Definitions
+ ****************************************************************************/
 
-/************************************************************
- * Global Functions
- ************************************************************/
+/****************************************************************************
+ * Type Definitions
+ ****************************************************************************/
+typedef struct file_struct __FILE;
 
-#ifndef CONFIG_ARCH_STRNCPY
-char *strncpy(char *dest, const char *src, size_t n)
-{
-  char *ret = dest;     /* Value to be returned */
-  char *end = dest + n; /* End of dest buffer + 1 byte */
+/****************************************************************************
+ * Public Function Prototypes
+ ****************************************************************************/
 
-  while ((dest != end) && (*dest++ = *src++) != '\0');
-  while (dest != end) *dest++ = '\0';
-  return ret;
-}
-#endif
+#endif /* __INCLUDE_SYS_CUSTOM_FILE_H */
