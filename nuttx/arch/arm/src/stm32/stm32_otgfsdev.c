@@ -3125,11 +3125,12 @@ static inline void stm32_rxinterrupt(FAR struct stm32_usbdev_s *priv)
   epphy  = (regval & OTGFS_GRXSTSD_EPNUM_MASK) >> OTGFS_GRXSTSD_EPNUM_SHIFT;
   if (epphy >= STM32_NENDPOINTS) {
       /*
-        on PH2 we are seeing a value of 8 here, with STM32_NENDPOINTS
-        at 4. When this happens regval is 0xb4e48168. This is a
-        workaround until David Sidrane can take a look.
+        on PH2 we are sometimes seeing a value of 8 or 12 here, with
+        STM32_NENDPOINTS at 4. We don't know why this is generated,
+        but the workaround is just to ignore it. Thanks to David
+        Sidrane for the investigation into this.
        */
-      return;
+      goto errout;
   }
   privep = &priv->epout[epphy];
 
@@ -3261,6 +3262,7 @@ static inline void stm32_rxinterrupt(FAR struct stm32_usbdev_s *priv)
 
   /* Enable the Rx Status Queue Level interrupt */
 
+errout:
   regval  = stm32_getreg(STM32_OTGFS_GINTMSK);
   regval |= OTGFS_GINT_RXFLVL;
   stm32_putreg(regval, STM32_OTGFS_GINTMSK);
