@@ -754,24 +754,85 @@ int  pipecommon_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 {
   FAR struct inode      *inode    = filep->f_inode;
   FAR struct pipe_dev_s *dev      = inode->i_private;
+  int ret = -EINVAL;
+
+  /* Some sanity checking */
+#if CONFIG_DEBUG
+  if (!dev)
+    {
+       return -EBADF;
+    }
+#endif
+
+  pipecommon_semtake(&dev->d_bfsem);
 
   /* Only one command supported */
 
-  if (cmd == PIPEIOC_POLICY)
+  switch (cmd)
+  {
+  case PIPEIOC_POLICY:
+  {
+    if (arg != 0)
     {
-      if (arg != 0)
-        {
-          PIPE_POLICY_1(dev->d_flags);
-        }
-      else
-        {
-          PIPE_POLICY_0(dev->d_flags);
-        }
-
-      return OK;
+      PIPE_POLICY_1(dev->d_flags);
     }
+    else
+    {
+      PIPE_POLICY_0(dev->d_flags);
+    }
+    
+    ret = OK;
+    break;
+  }
 
-  return -ENOTTY;
+  case FIONREAD:
+  {
+    int count;
+      
+    /* determine the number of bytes available in the buffer */
+
+    if (dev->d_wrndx < dev->d_rdndx)
+    { 
+      count = (CONFIG_DEV_PIPE_SIZE - dev->d_rdndx) + dev->d_wrndx;
+    }
+    else
+    {
+      count = dev->d_wrndx - dev->d_rdndx;
+    }
+      
+    *(int *)arg = count;
+    ret = OK;
+    
+    break;
+  }
+
+  case FIONWRITE:
+  {
+    int count;
+    
+    /* determine the number of bytes free in the buffer */
+
+    if (dev->d_wrndx < dev->d_rdndx)
+    { 
+      count = (dev->d_rdndx - dev->d_wrndx) - 1;
+    }
+    else
+    {
+      count = ((CONFIG_DEV_PIPE_SIZE - dev->d_wrndx) + dev->d_rdndx) - 1;
+    }
+    
+    *(int *)arg = count;
+    ret = OK;
+    
+    break;
+  }
+  default:
+    break;
+  }
+
+  sem_post(&dev->d_bfsem);
+
+  return ret;
 }
 
 /****************************************************************************
