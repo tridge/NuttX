@@ -462,6 +462,24 @@ extern "C"
 
 FAR struct spi_dev_s *up_spiinitialize(int port);
 
+/****************************************************************************
+ * Name: up_spi_use_irq_save
+ *
+ * Description:
+ *
+ * return true if this bus needs to use irqsave/irqrestore for locking
+ */   
+FAR bool up_spi_use_irq_save(FAR struct spi_dev_s *);
+
+/****************************************************************************
+ * Name: up_spi_set_need_irq_save
+ *
+ * Description:
+ *
+ * set a bus to needing irqsave/irqrestore for locking
+ */   
+FAR void up_spi_set_need_irq_save(FAR struct spi_dev_s *);
+    
 #undef EXTERN
 #if defined(__cplusplus)
 }
