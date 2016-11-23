@@ -56,6 +56,8 @@
 #include "stm32_dma.h"
 #include "stm32.h"
 
+#include <stdio.h>
+
 /* This file supports only the STM32 F4 family (an probably the F2 family
  * as well?)
  */
@@ -98,6 +100,7 @@ struct stm32_dma_s
   uint32_t       base;     /* DMA register channel base address */
   dma_callback_t callback; /* Callback invoked when the DMA completes */
   void          *arg;      /* Argument passed to callback function */
+  int8_t         in_use;
 };
 
 /****************************************************************************
@@ -537,7 +540,7 @@ void weak_function up_dmainitialize(void)
  *
  ****************************************************************************/
 
-DMA_HANDLE stm32_dmachannel(unsigned int dmamap)
+DMA_HANDLE stm32_dmachannel_loc(unsigned int dmamap, const char *file, uint32_t line)
 {
   FAR struct stm32_dma_s *dmast;
 
@@ -546,6 +549,8 @@ DMA_HANDLE stm32_dmachannel(unsigned int dmamap)
   dmast = stm32_dmamap(dmamap);
   DEBUGASSERT(dmast != NULL);
 
+  printf("Taking DMA channel %u - in_use=%u from %s:%u\n", dmamap, (unsigned)dmast->in_use, file, line);
+  
   /* Get exclusive access to the DMA channel -- OR wait until the channel
    * is available if it is currently being used by another driver
    */
@@ -557,6 +562,8 @@ DMA_HANDLE stm32_dmachannel(unsigned int dmamap)
    * structure.
    */
 
+  dmast->in_use++;
+  
   dmast->channel = STM32_DMA_CHANNEL(dmamap);
   return (DMA_HANDLE)dmast;
 }
@@ -586,6 +593,10 @@ void stm32_dmafree(DMA_HANDLE handle)
 
   DEBUGASSERT(handle != NULL);
 
+  uint8_t chndx = (dmast - &g_dma[0]);
+  printf("Free DMA channel %u - in_use=%u\n", chndx, (unsigned)dmast->in_use);
+  dmast->in_use--;
+  
   /* Release the channel */
 
   stm32_dmagive(dmast);

@@ -189,7 +189,8 @@ extern "C" {
  *
  ****************************************************************************/
 
-EXTERN DMA_HANDLE stm32_dmachannel(unsigned int chan);
+#define stm32_dmachannel(chan) stm32_dmachannel_loc(chan, __FILE__, __LINE__)
+EXTERN DMA_HANDLE stm32_dmachannel_loc(unsigned int chan, const char *fname, uint32_t line);
 
 /****************************************************************************
  * Name: stm32_dmafree
