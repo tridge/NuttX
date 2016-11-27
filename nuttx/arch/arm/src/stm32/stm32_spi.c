@@ -1386,13 +1386,14 @@ static void spi_exchange(FAR struct spi_dev_s *dev, FAR const void *txbuffer,
 {
     FAR struct stm32_spidev_s *priv = (FAR struct stm32_spidev_s *)dev;
 #ifdef CONFIG_STM32_DMACAPABLE
+    bool bit16 = spi_16bitmode(priv)?true:false;
     if (nwords < 16 ||
         priv->rxdma == NULL ||
         priv->txdma == NULL ||
         priv->use_irqsave ||
         up_interrupt_context() ||
-        (txbuffer && !stm32_dmacapable((uint32_t)txbuffer, nwords, SPI_TXDMA8_CONFIG)) ||
-        (rxbuffer && !stm32_dmacapable((uint32_t)rxbuffer, nwords, SPI_RXDMA8_CONFIG)))
+        (txbuffer && !stm32_dmacapable((uint32_t)txbuffer, nwords, bit16?SPI_TXDMA16_CONFIG:SPI_TXDMA8_CONFIG)) ||
+        (rxbuffer && !stm32_dmacapable((uint32_t)rxbuffer, nwords, bit16?SPI_RXDMA16_CONFIG:SPI_RXDMA8_CONFIG)))
     {
       /* Unsupported memory region or no DMA setup, fall back to non-DMA method. */
 
