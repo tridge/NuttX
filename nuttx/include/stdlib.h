@@ -169,6 +169,7 @@ char     *itoa(int value, char *str, int base);
 /* Memory Management */
 
 FAR void *malloc(size_t);
+FAR void *malloc_memrange(size_t, uint32_t, uint32_t);
 void      free(FAR void*);
 FAR void *realloc(FAR void*, size_t);
 FAR void *memalign(size_t, size_t);

@@ -213,6 +213,144 @@ FAR void *mm_malloc(FAR struct mm_heap_s *heap, size_t size)
   return ret;
 }
 
+
+/*
+  allocate memory from the heap, only returning memory in the given
+  range of addresses. This involves a search of the heap, so it is
+  slow, but it isn't called very often as this is used for DMA
+  allocations, so called once per file open on fat32 and for setting
+  up sensor transfer buffers for sensors using DMA for SPI
+ */
+static FAR void *mm_malloc_memrange(FAR struct mm_heap_s *heap, size_t size, uint32_t range_min, uint32_t range_max)
+{
+  FAR struct mm_freenode_s *node;
+  void *ret = NULL;
+  int ndx;
+
+  /* Handle bad sizes */
+
+  if (size <= 0)
+    {
+      return NULL;
+    }
+
+  /* Adjust the size to account for (1) the size of the allocated node and
+   * (2) to make sure that it is an even multiple of our granule size.
+   */
+
+  size = MM_ALIGN_UP(size + SIZEOF_MM_ALLOCNODE);
+
+  /* We need to hold the MM semaphore while we muck with the nodelist. */
+
+  mm_takesemaphore(heap);
+
+  /* Get the location in the node list to start the search. Special case
+   * really big allocations
+   */
+
+  if (size >= MM_MAX_CHUNK)
+    {
+      ndx = MM_NNODES-1;
+    }
+  else
+    {
+      /* Convert the request size into a nodelist index */
+
+      ndx = mm_size2ndx(size);
+    }
+
+  /* Search for a large enough chunk in the list of nodes. This list is
+   * ordered by size, but will have occasional zero sized nodes as we visit
+   * other mm_nodelist[] entries.
+   */
+
+  for (node = heap->mm_nodelist[ndx].flink;
+       node && (node->size < size || node < (void*)range_min || node > (void*)(range_max-size));
+       node = node->flink);
+
+  /* If we found a node with non-zero size, then this is one to use. Since
+   * the list is ordered, we know that is must be best fitting chunk
+   * available.
+   */
+
+  if (node)
+    {
+      FAR struct mm_freenode_s *remainder;
+      FAR struct mm_freenode_s *next;
+      size_t remaining;
+
+      /* Remove the node.  There must be a predecessor, but there may not be
+       * a successor node.
+       */
+
+      DEBUGASSERT(node->blink);
+      node->blink->flink = node->flink;
+      if (node->flink)
+        {
+          node->flink->blink = node->blink;
+        }
+
+      /* Check if we have to split the free node into one of the allocated
+       * size and another smaller freenode.  In some cases, the remaining
+       * bytes can be smaller (they may be SIZEOF_MM_ALLOCNODE).  In that
+       * case, we will just carry the few wasted bytes at the end of the
+       * allocation.
+       */
+
+      remaining = node->size - size;
+      if (remaining >= SIZEOF_MM_FREENODE)
+        {
+          /* Get a pointer to the next node in physical memory */
+
+          next = (FAR struct mm_freenode_s*)(((char*)node) + node->size);
+
+          /* Create the remainder node */
+
+          remainder = (FAR struct mm_freenode_s*)(((char*)node) + size);
+          remainder->size = remaining;
+          remainder->preceding = size;
+
+          /* Adjust the size of the node under consideration */
+
+          node->size = size;
+
+          /* Adjust the 'preceding' size of the (old) next node, preserving
+           * the allocated flag.
+           */
+
+          next->preceding = remaining | (next->preceding & MM_ALLOC_BIT);
+
+          /* Add the remainder back into the nodelist */
+
+          mm_addfreechunk(heap, remainder);
+        }
+
+      /* Handle the case of an exact size match */
+
+      node->preceding |= MM_ALLOC_BIT;
+      ret = (void*)((char*)node + SIZEOF_MM_ALLOCNODE);
+    }
+
+  mm_givesemaphore(heap);
+
+  /* If CONFIG_DEBUG_MM is defined, then output the result of the allocation
+   * to the SYSLOG.
+   */
+
+#ifdef CONFIG_DEBUG_MM
+  if (!ret)
+    {
+      mdbg("Allocation failed, size %d\n", size);
+    }
+  else
+    {
+      mvdbg("Allocated %p, size %d\n", ret, size);
+    }
+#endif
+
+  return ret;
+}
+
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -235,3 +373,11 @@ FAR void *malloc(size_t size)
 }
 #endif
 
+/*
+  allocate memory from the heap, only returning memory in the given
+  range of addresses.
+ */
+FAR void *malloc_memrange(size_t size, uint32_t range_min, uint32_t range_max)
+{
+    return mm_malloc_memrange(&g_mmheap, size, range_min, range_max);
+}
