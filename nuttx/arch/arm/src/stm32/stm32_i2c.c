@@ -1464,6 +1464,37 @@ static int stm32_i2c3_isr(int irq, void *context)
  * Private Initialization and Deinitialization
  ************************************************************************************/
 
+/*
+  setup digital filter for i2c peripheral
+
+  We setup the filter value to the maximum filtering for fast mode
+  based on the PCLK1 value, keeping within the max hold time for i2c
+  spec.  See table 103 in RM0090
+ */
+static void stm32_i2c_setup_filter(FAR struct stm32_i2c_priv_s *priv)
+{
+    uint8_t filter_mhz = STM32_PCLK1_FREQUENCY / 1000000;
+    uint8_t filter = 0;
+    if (filter_mhz <= 10) {
+        filter = 0;
+    } else if (filter_mhz <= 20) {
+        filter = 1;
+    } else if (filter_mhz <= 30) {
+        filter = 7;
+    } else if (filter_mhz <= 40) {
+        filter = 13;
+    } else {
+        filter = 15;
+    }
+
+    // ensure that PE is zero before setting filter
+    stm32_i2c_putreg(priv, STM32_I2C_CR1_OFFSET, 0);
+
+    // set filter and ensure analog filter is on
+    stm32_i2c_putreg(priv, STM32_I2C_FLTR_OFFSET, filter);    
+}
+
+
 /************************************************************************************
  * Name: stm32_i2c_init
  *
@@ -1510,6 +1541,8 @@ static int stm32_i2c_init(FAR struct stm32_i2c_priv_s *priv)
     
     stm32_i2c_putreg(priv, STM32_I2C_CR2_OFFSET, (STM32_PCLK1_FREQUENCY / 1000000));
     stm32_i2c_setclock(priv, 100000);
+
+    stm32_i2c_setup_filter(priv);
     
     /* Enable I2C */
     
