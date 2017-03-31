@@ -1473,6 +1473,7 @@ static int stm32_i2c3_isr(int irq, void *context)
  */
 static void stm32_i2c_setup_filter(FAR struct stm32_i2c_priv_s *priv)
 {
+#ifdef STM32_I2C_FLTR_OFFSET
     uint8_t filter_mhz = STM32_PCLK1_FREQUENCY / 1000000;
     uint8_t filter = 0;
     if (filter_mhz <= 10) {
@@ -1491,7 +1492,8 @@ static void stm32_i2c_setup_filter(FAR struct stm32_i2c_priv_s *priv)
     stm32_i2c_putreg(priv, STM32_I2C_CR1_OFFSET, 0);
 
     // set filter and ensure analog filter is on
-    stm32_i2c_putreg(priv, STM32_I2C_FLTR_OFFSET, filter);    
+    stm32_i2c_putreg(priv, STM32_I2C_FLTR_OFFSET, filter);
+#endif
 }
 
 
