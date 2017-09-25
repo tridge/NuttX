@@ -80,6 +80,15 @@
 #define FLASH_SR_WRITE_PROTECTION_ERROR  FLASH_SR_WRPERR
 #endif
 
+// optionally disable interrupts during flash writes
+#define STM32_FLASH_DISABLE_ISR 0
+
+#ifndef FLASH_ACR_DCEN
+#define FLASH_ACR_DCEN  (1U<<10)
+#define FLASH_ACR_DCRST (1U<<12)
+#endif
+
+
 /************************************************************************************
  * Private Functions
  ************************************************************************************/
@@ -101,11 +110,23 @@ void stm32_flash_unlock(void)
       putreg32(FLASH_KEY1, STM32_FLASH_KEYR);
       putreg32(FLASH_KEY2, STM32_FLASH_KEYR);
     }
+  while (getreg32(STM32_FLASH_SR) & FLASH_SR_BSY)
+    {
+      up_waste();
+    }
+
+  // disable the data cache - see stm32 errata 2.1.11
+  modifyreg32(STM32_FLASH_ACR, FLASH_ACR_DCEN, 0);
 }
 
 void stm32_flash_lock(void)
 {
   modifyreg32(STM32_FLASH_CR, 0, FLASH_CR_LOCK);
+
+  // re-enable the data cache - see stm32 errata 2.1.11
+  modifyreg32(STM32_FLASH_ACR, 0, FLASH_ACR_DCRST);
+  modifyreg32(STM32_FLASH_ACR, FLASH_ACR_DCRST, 0);
+  modifyreg32(STM32_FLASH_ACR, 0, FLASH_ACR_DCEN);
 }
 
 
@@ -258,6 +279,9 @@ ssize_t up_progmem_erasepage(size_t page)
 
   modifyreg32(STM32_FLASH_CR, FLASH_CR_PAGE_ERASE, 0);
 
+  // lock again to protect flash after erase
+  stm32_flash_lock();
+  
   /* Verify */
   if (up_progmem_ispageerased(page) == 0)
     {
@@ -325,6 +349,10 @@ ssize_t up_progmem_write(size_t addr, const void *buf, size_t count)
       return -EPERM;
     }
 
+#if STM32_FLASH_DISABLE_ISR
+  irqstate_t flags = irqsave();
+#endif
+  
   stm32_flash_unlock();
 
   modifyreg32(STM32_FLASH_CR, 0, FLASH_CR_PG);
@@ -335,29 +363,44 @@ ssize_t up_progmem_write(size_t addr, const void *buf, size_t count)
 #endif
 
   for (addr += STM32_FLASH_BASE; count; count -= 2, hword++, addr += 2)
-    {
-      /* Write half-word and wait to complete */
+  {
+	/* Write half-word and wait to complete */
+	
+	putreg16(*hword, addr);
 
-      putreg16(*hword, addr);
+	while (getreg32(STM32_FLASH_SR) & FLASH_SR_BSY) up_waste();
 
-      while (getreg32(STM32_FLASH_SR) & FLASH_SR_BSY) up_waste();
+	/* Verify */
 
-      /* Verify */
+	if (getreg32(STM32_FLASH_SR) & FLASH_SR_WRITE_PROTECTION_ERROR)
+	{
+	  modifyreg32(STM32_FLASH_CR, FLASH_CR_PG, 0);
+#if STM32_FLASH_DISABLE_ISR
+	  irqrestore(flags);
+#endif
+	  stm32_flash_lock();
+	  return -EROFS;
+	}
 
-      if (getreg32(STM32_FLASH_SR) & FLASH_SR_WRITE_PROTECTION_ERROR)
-        {
-          modifyreg32(STM32_FLASH_CR, FLASH_CR_PG, 0);
-          return -EROFS;
-        }
-
-      if (getreg16(addr) != *hword)
-        {
-          modifyreg32(STM32_FLASH_CR, FLASH_CR_PG, 0);
-          return -EIO;
-        }
-    }
-
+	if (getreg16(addr) != *hword)
+	{
+	  modifyreg32(STM32_FLASH_CR, FLASH_CR_PG, 0);
+#if STM32_FLASH_DISABLE_ISR
+	  irqrestore(flags);
+#endif
+	  stm32_flash_lock();
+	  return -EIO;
+	}
+  }
+  
   modifyreg32(STM32_FLASH_CR, FLASH_CR_PG, 0);
+		
+  // lock again after write
+  stm32_flash_lock();
+		
+#if STM32_FLASH_DISABLE_ISR
+  irqrestore(flags);
+#endif
   return written;
 }
 
